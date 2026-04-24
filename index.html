@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Pro Login</title>
+
+  <meta name="description" content="это мой чат">
+
+  <meta name="keywords" content="сайт, чат , знакомство , танысу , бесплатный , chat , free">
+
+  <meta name="author" content="sabur">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+      .toast {
+  position: fixed;
+  bottom: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: black;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 10px;
+  border: 1px solid #00f2ff;
+  transition: 0.4s;
+  z-index: 9999;
+}
+
+.toast.show {
+  bottom: 30px;
+}
+
+.toast.error {
+  border-color: red;
+}
+
+.toast.success {
+  border-color: #00f2ff;
+}
+
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial;
+    }
+
+    body {
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: black;
+      overflow: hidden;
+      color: white;
+      perspective: 1000px;
+    }
+
+    /* 🌌 background */
+    .bg {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 20% 30%, #00f2ff22, transparent 40%),
+                  radial-gradient(circle at 80% 70%, #ff00ff22, transparent 40%),
+                  radial-gradient(circle at 50% 50%, #00ff8822, transparent 50%);
+      animation: move 8s infinite alternate;
+    }
+
+    @keyframes move {
+      0% { transform: scale(1) translate(0,0); }
+      100% { transform: scale(1.2) translate(-5%, 5%); }
+    }
+
+    /* ✨ particles */
+    .particle {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      background: white;
+      border-radius: 50%;
+      opacity: 0.5;
+      animation: float 6s infinite linear;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(100vh); opacity: 0; }
+      50% { opacity: 1; }
+      100% { transform: translateY(-10vh); opacity: 0; }
+    }
+
+    /* 🧊 card */
+    .box {
+      position: relative;
+      z-index: 2;
+      width: 340px;
+      padding: 30px;
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(20px);
+      border-radius: 15px;
+      border: 1px solid rgba(255,255,255,0.2);
+      box-shadow: 0 0 40px rgba(0,255,255,0.2);
+      text-align: center;
+      transition: transform 0.2s;
+    }
+
+    h2 {
+      color: #00f2ff;
+      margin-bottom: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: none;
+      outline: none;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      transition: 0.3s;
+    }
+
+    input:focus {
+      box-shadow: 0 0 12px #00f2ff;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+
+    .login {
+      background: #00f2ff;
+      color: black;
+    }
+
+    .login:hover {
+      box-shadow: 0 0 15px #00f2ff;
+    }
+
+    .reg {
+      background: transparent;
+      border: 1px solid #00f2ff;
+      color: #00f2ff;
+    }
+
+    .reg:hover {
+      background: #00f2ff;
+      color: black;
+    }
+
+    /* ❌ shake */
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      50% { transform: translateX(5px); }
+      75% { transform: translateX(-5px); }
+      100% { transform: translateX(0); }
+    }
+
+    .shake {
+      animation: shake 0.4s;
+    }
+
+    /* ⏳ loader */
+    .loader {
+      display: none;
+      margin-top: 10px;
+      border: 3px solid #333;
+      border-top: 3px solid #00f2ff;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+  </style>
+</head>
+
+<body>
+<div id="toast" class="toast"></div>
+<div class="bg"></div>
+
+<div id="particles"></div>
+
+<div class="box" id="card">
+  <h2>LOGIN</h2>
+
+  <input id="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+
+  <button class="login" onclick="login()">LOGIN</button>
+  <button class="reg" onclick="goReg()">REGISTER</button>
+
+  <div class="loader" id="loader"></div>
+</div>
+
+<script type="module">
+import { supabase } from './subapi.js'
+
+window.addEventListener("beforeunload", async () => {
+  if (!me) return
+
+  await supabase
+  .from("users")
+  .update({
+    is_online: true,
+    last_seen: new Date()
+  })
+  .eq("id", data.id)
+})
+
+
+/* ✨ particles */
+function createParticles() {
+  const container = document.getElementById("particles")
+
+  for (let i = 0; i < 40; i++) {
+    let p = document.createElement("div")
+    p.className = "particle"
+    p.style.left = Math.random() * 100 + "vw"
+    p.style.animationDuration = (3 + Math.random() * 5) + "s"
+    container.appendChild(p)
+  }
+}
+createParticles()
+
+/* 🖱️ 3D tilt */
+const card = document.getElementById("card")
+document.addEventListener("mousemove", (e) => {
+  let x = (window.innerWidth / 2 - e.pageX) / 20
+  let y = (window.innerHeight / 2 - e.pageY) / 20
+  card.style.transform = `rotateY(${x}deg) rotateX(${y}deg)`
+})
+
+/* 🔊 sound */
+function sound(type) {
+  const a = new Audio(type === "error" ? "./error.mp3" : "./success.mp3")
+  a.volume = 0.5
+  a.play()
+}
+
+/* ❌ error */
+function error(el) {
+  el.classList.add("shake")
+  el.style.boxShadow = "0 0 10px red"
+  sound("error")
+  setTimeout(() => el.classList.remove("shake"), 500)
+}
+
+/* ⏳ loader */
+function showLoader(show) {
+  document.getElementById("loader").style.display = show ? "block" : "none"
+}
+let attempts = 0
+let lockTime = 0
+
+/* 🚀 login */
+window.login = async function () {
+  const email = document.getElementById("email")
+  const password = document.getElementById("password")
+  if (lockTime > Date.now()) {
+  showToast("Вы повторили слишком много раз, пожалуйста, подождите 1 минуту!", "error")
+  return
+}
+  // ❌ empty check
+  if (!email.value || !password.value) {
+    error(password)
+    showToast("ошибка, адрес электронной почты или пароль пусты!", "error")
+    return
+  }
+  
+  attempts++
+
+showToast("подождите...", "error")
+
+if (attempts >= 8) {
+  lockTime = Date.now() + 60 * 1000  // 1 минут
+  attempts = 0
+  showToast("Вы повторили слишком много раз, пожалуйста, подождите 1 минуту!", "error")
+}
+
+  const { data, error: err } = await supabase
+    .from("users")
+    .select("*")
+    .eq("email", email.value)
+    .eq("password", password.value)
+    .maybeSingle()   // 🔥 IMPORTANT FIX
+
+  // ❌ not found
+  if (err || !data) {
+    error(password)
+    showToast("ошибка , аккаунт не найден!", "error")
+    return
+  }
+
+  // ✅ success effect
+  sound("success")
+
+  showToast("вход успешен!", "success")
+  
+
+  await supabase
+  .from("users")
+  .update({
+    is_online: true,
+    last_seen: new Date()
+  })
+  .eq("id", data.id)
+
+
+  setTimeout(() => {
+  localStorage.setItem("user", JSON.stringify(data))
+
+  if (data?.role === "admin") {
+    window.location.href = "admin1admin1admin123admin123.html"
+    return
+  }
+
+  const hasProfile = data?.nickname && data?.avatar_url
+
+  if (hasProfile) {
+    window.location.href = "admins.html"
+  } else {
+    window.location.href = "words.html"
+  }
+}, 700)
+}
+
+/* 🔗 register */
+window.goReg = function () {
+  window.location.href = "register.html"
+}
+
+window.goLogin = function () {
+  window.location.href = "index.html"
+}
+
+function showToast(message, type) {
+  const toast = document.getElementById("toast")
+
+  toast.innerText = message
+  toast.className = "toast show " + type
+
+  setTimeout(() => {
+    toast.classList.remove("show")
+  }, 2000)
+}
+
+
+</script>
+
+</body>
+</html>

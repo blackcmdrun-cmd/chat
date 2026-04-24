@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Sound DB Test</title>
+
+  <style>
+    body{
+      background:#0b0f1a;
+      color:white;
+      font-family:Arial;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      height:100vh;
+    }
+
+    .box{
+      width:320px;
+      padding:20px;
+      background:rgba(255,255,255,0.05);
+      border-radius:12px;
+      text-align:center;
+      box-shadow:0 0 30px #00f2ff33;
+    }
+
+    button{
+      padding:10px;
+      width:100%;
+      margin-top:10px;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+      background:#00f2ff;
+      font-weight:bold;
+    }
+
+    .log{
+      margin-top:10px;
+      font-size:13px;
+      color:#aaa;
+      text-align:left;
+      height:120px;
+      overflow:auto;
+      background:#111827;
+      padding:10px;
+      border-radius:8px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+  <h3>🔊 Sound DB TEST</h3>
+
+  <button onclick="testInsert()">TEST INSERT</button>
+  <button onclick="checkLast()">CHECK LAST DATA</button>
+
+  <div class="log" id="log"></div>
+</div>
+
+<script type="module">
+import { supabase } from "./subapi.js";
+
+const logBox = document.getElementById("log");
+
+function log(msg){
+  logBox.innerHTML += msg + "<br>";
+  logBox.scrollTop = logBox.scrollHeight;
+}
+
+/* 1. INSERT TEST */
+window.testInsert = async () => {
+  log("Sending test sound...");
+
+  const { data, error } = await supabase
+    .from("sounds")
+    .insert([
+      {
+        user_id: "e54a33b1-21cc-4b18-8335-afdd10f56a8e",
+        sound_url: "test.mp3"
+      }
+    ])
+    .select();
+
+  if(error){
+    log("❌ ERROR: " + error.message);
+  } else {
+    log("✅ SUCCESS INSERTED");
+    log(JSON.stringify(data));
+  }
+};
+
+/* 2. READ LAST */
+window.checkLast = async () => {
+  const { data, error } = await supabase
+    .from("sounds")
+    .select("*")
+    .order("created_at", { ascending:false })
+    .limit(5);
+
+  if(error){
+    log("❌ READ ERROR: " + error.message);
+  } else {
+    log("📦 LAST DATA:");
+    data.forEach(d=>{
+      log(d.user_id + " → " + d.sound_url);
+    });
+  }
+};
+
+</script>
+
+</body>
+</html>

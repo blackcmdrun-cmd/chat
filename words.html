@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Setup Profile</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial;
+    }
+
+    body {
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: black;
+      overflow: hidden;
+      color: white;
+      perspective: 1000px;
+    }
+
+    .bg {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 20% 30%, #00f2ff22, transparent 40%),
+                  radial-gradient(circle at 80% 70%, #ff00ff22, transparent 40%),
+                  radial-gradient(circle at 50% 50%, #00ff8822, transparent 50%);
+      animation: move 8s infinite alternate;
+    }
+
+    @keyframes move {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.2) translate(-5%, 5%); }
+    }
+
+    .toast {
+      position: fixed;
+      bottom: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: black;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 10px;
+      border: 1px solid #00f2ff;
+      transition: 0.4s;
+      z-index: 9999;
+    }
+
+    .toast.show {
+      bottom: 30px;
+    }
+
+    .toast.error {
+      border-color: red;
+    }
+
+    .toast.success {
+      border-color: #00f2ff;
+    }
+
+    .box {
+      width: 340px;
+      padding: 30px;
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(20px);
+      border-radius: 15px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.2);
+      box-shadow: 0 0 40px rgba(0,255,255,0.2);
+      z-index: 2;
+    }
+
+    h2 {
+      color: #00f2ff;
+      margin-bottom: 15px;
+    }
+
+    .avatars {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 15px 0;
+    }
+
+    .avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: 0.3s;
+    }
+
+    .avatar:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 10px #00f2ff;
+    }
+
+    .selected {
+      border: 2px solid #00f2ff;
+      transform: scale(1.2);
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border: none;
+      outline: none;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.1);
+      color: white;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 15px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #00f2ff;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px #00f2ff;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="bg"></div>
+<div id="toast" class="toast"></div>
+
+<div class="box">
+  <h2>SETUP PROFILE</h2>
+
+  <div class="avatars" id="avatars"></div>
+
+  <input id="nickname" placeholder="Nickname">
+
+  <button onclick="save()">SAVE</button>
+</div>
+
+<script type="module">
+import { supabase } from "./subapi.js"
+
+let selectedAvatar = ""
+
+// 🌟 avatars
+const avatars = [
+  "avat.jpg",
+  "anon.jpg",
+  "anon1.jpg",
+  "nona.jpg"
+]
+
+const box = document.getElementById("avatars")
+
+avatars.forEach(url => {
+  const img = document.createElement("img")
+  img.src = url
+  img.className = "avatar"
+
+  img.onclick = () => {
+    document.querySelectorAll(".avatar").forEach(a => a.classList.remove("selected"))
+    img.classList.add("selected")
+    selectedAvatar = url
+  }
+
+  box.appendChild(img)
+})
+
+// 🌟 toast
+function showToast(msg, type="success") {
+  const toast = document.getElementById("toast")
+  toast.innerText = msg
+  toast.className = "toast show " + type
+
+  setTimeout(() => {
+    toast.classList.remove("show")
+  }, 2000)
+}
+
+// 🚀 SAVE PROFILE
+window.save = async function () {
+
+  const nickname = document.getElementById("nickname").value
+
+  // 🔥 login user localStorage
+  const user = JSON.parse(localStorage.getItem("user"))
+
+  if (!user) {
+    showToast("Login жоқ!", "error")
+    return
+  }
+
+  if (!nickname || !selectedAvatar) {
+    showToast("Толық толтыр!", "error")
+    return
+  }
+
+  // 🔥 update database
+  const { error } = await supabase
+    .from("users")
+    .update({
+      nickname: nickname,
+      avatar_url: selectedAvatar
+    })
+    .eq("id", user.id)
+
+  if (error) {
+    showToast("Error сақталмады!", "error")
+    return
+  }
+
+  // 🔥 update localStorage
+  user.nickname = nickname
+  user.avatar_url = selectedAvatar
+  localStorage.setItem("user", JSON.stringify(user))
+
+  showToast("Saved!", "success")
+
+  setTimeout(() => {
+    window.location.href = "admins.html"
+  }, 800)
+}
+</script>
+
+</body>
+</html>

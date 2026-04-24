@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Pro Max VIP Chat</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:'Inter',sans-serif;
+}
+
+body{
+  background:#070a12;
+  color:white;
+  overflow:hidden;
+}
+
+/* 🌌 LIVE BACKGROUND */
+.bg{
+  position:fixed;
+  inset:0;
+  z-index:-2;
+  background:radial-gradient(circle at 20% 20%,#00f2ff55,transparent 40%),
+             radial-gradient(circle at 80% 30%,#ff00ff55,transparent 45%),
+             radial-gradient(circle at 50% 80%,#00ff9955,transparent 50%);
+  filter:blur(70px);
+  animation:move 10s ease-in-out infinite alternate;
+}
+
+@keyframes move{
+  0%{transform:scale(1);}
+  100%{transform:scale(1.2);}
+}
+
+/* TOP */
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px;
+  background:rgba(255,255,255,0.04);
+  backdrop-filter:blur(15px);
+  border-bottom:1px solid rgba(255,255,255,0.08);
+}
+
+.me{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.me img{
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  border:2px solid #00f2ff;
+}
+
+/* SEARCH */
+.search{
+  width:140px;
+  padding:8px;
+  border-radius:10px;
+  border:none;
+  background:rgba(255,255,255,0.05);
+  color:white;
+}
+
+/* MAIN */
+.container{
+  display:flex;
+  height:92vh;
+}
+
+/* USERS */
+.left{
+  width:30%;
+  overflow:auto;
+  border-right:1px solid rgba(255,255,255,0.06);
+}
+
+.card{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px;
+  margin:8px;
+  border-radius:12px;
+  background:rgba(255,255,255,0.03);
+  cursor:pointer;
+  transition:0.2s;
+}
+
+.card:hover{
+  transform:scale(1.02);
+  background:rgba(0,242,255,0.08);
+}
+
+.card img{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+}
+
+/* CHAT */
+.right{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
+
+.chatbox{
+  flex:1;
+  padding:14px;
+  overflow:auto;
+}
+
+/* MSG */
+.msg{
+  max-width:70%;
+  padding:12px;
+  margin:8px;
+  border-radius:14px;
+  animation:pop 0.2s ease;
+  word-break:break-word;
+}
+
+@keyframes pop{
+  from{transform:scale(0.8);opacity:0;}
+  to{transform:scale(1);opacity:1;}
+}
+
+.meMsg{
+  margin-left:auto;
+  background:linear-gradient(45deg,#00f2ff,#0066ff);
+  color:black;
+}
+
+.otherMsg{
+  background:rgba(255,255,255,0.06);
+}
+
+/* INPUT */
+.inputBox{
+  display:flex;
+  gap:10px;
+  padding:12px;
+  background:rgba(255,255,255,0.03);
+  border-top:1px solid rgba(255,255,255,0.08);
+}
+
+input{
+  flex:1;
+  padding:12px;
+  border:none;
+  border-radius:12px;
+  background:rgba(255,255,255,0.05);
+  color:white;
+}
+
+button{
+  padding:12px 18px;
+  border:none;
+  border-radius:12px;
+  background:linear-gradient(45deg,#00f2ff,#0066ff);
+  cursor:pointer;
+  font-weight:600;
+}
+.banUI{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.75);
+  backdrop-filter:blur(25px);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  z-index:99999;
+}
+
+.hidden{ display:none; }
+
+.banCard{
+  text-align:center;
+  padding:30px;
+  border-radius:20px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid #ff0044;
+  box-shadow:0 0 40px #ff004455;
+  animation:pop 0.4s ease;
+}
+
+.icon{
+  font-size:50px;
+  animation:shake 0.5s infinite;
+}
+
+.banCard h2{
+  color:#ff0044;
+  margin-top:10px;
+  letter-spacing:2px;
+}
+
+.banCard p{
+  opacity:0.7;
+  margin-top:5px;
+}
+
+@keyframes pop{
+  from{transform:scale(0.7);opacity:0;}
+  to{transform:scale(1);opacity:1;}
+}
+
+@keyframes shake{
+  0%{transform:translateX(0);}
+  25%{transform:translateX(-3px);}
+  50%{transform:translateX(3px);}
+  75%{transform:translateX(-3px);}
+  100%{transform:translateX(0);}
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="bg"></div>
+
+<div id="banUI" class="banUI hidden">
+  <div class="banCard">
+    <div class="icon">🚫</div>
+    <h2>YOU WERE REMOVED</h2>
+    <p>System access terminated</p>
+  </div>
+</div>
+
+<audio id="banSound">
+  <source src="ban.mp3" type="audio/mpeg">
+</audio>
+
+<!-- SOUND -->
+<audio id="msgSound">
+  <source src="error.mp3" type="audio/mpeg">
+</audio>
+
+<!-- TOP -->
+<div class="topbar">
+  <div class="me">
+    <img id="meImg">
+    <span id="meName"></span>
+  </div>
+  <input class="search" id="search" placeholder="Search users...">
+</div>
+
+<!-- MAIN -->
+<div class="container">
+
+  <div class="left" id="users"></div>
+
+  <div class="right">
+
+    <h3 id="chatTitle" style="padding:10px;">Select user</h3>
+
+    <div class="chatbox" id="chatbox"></div>
+
+    <div class="inputBox">
+      <input id="msg" placeholder="message...">
+      <button onclick="send()">Send</button>
+    </div>
+
+  </div>
+
+</div>
+
+<script type="module">
+import { supabase } from "./subapi.js";
+
+function showBanUI(){
+  const ui = document.getElementById("banUI");
+  const sound = document.getElementById("banSound");
+
+  ui.classList.remove("hidden");
+
+  // 🔊 sound play
+  sound.currentTime = 0;
+  sound.play().catch(()=>{});
+
+  // ⏳ logout delay
+  setTimeout(()=>{
+    localStorage.removeItem("user");
+    location.href="index.html";
+  }, 2500);
+}
+
+let me=JSON.parse(localStorage.getItem("user"));
+if(!me)location.href="index.html";
+
+let selected=null;
+let lastCount=0;
+
+const sound=document.getElementById("msgSound");
+
+async function checkIfDeleted(){
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select("id")
+      .eq("id", me.id)
+      .maybeSingle();
+
+    // ❌ user жоқ болса
+    if(!data){
+      showBanUI();
+    }
+
+  } catch (e) {
+    console.log("check error:", e);
+  }
+}
+
+setInterval(checkIfDeleted, 3000);
+
+/* PROFILE */
+meImg.src=me.avatar_url||"https://i.pravatar.cc/100";
+meName.innerText=me.nickname;
+
+/* SOUND */
+function playSound(){
+  sound.currentTime=0;
+  sound.play().catch(()=>{});
+}
+
+const searchInput = document.getElementById("search");
+
+searchInput.addEventListener("input", async (e) => {
+  const q = e.target.value.toLowerCase().trim();
+
+  const { data } = await supabase.from("users").select("*");
+
+  users.innerHTML = "";
+
+  data
+    .filter(u => u.id !== me.id)
+    .filter(u => {
+      const name = (u.nickname || "").toLowerCase();
+      return name.includes(q);
+    })
+    .forEach(u => {
+      let div = document.createElement("div");
+      div.className = "card";
+
+      div.innerHTML = `
+        <img src="${u.avatar_url || 'https://i.pravatar.cc/100'}">
+        <div style="flex:1">${u.nickname}</div>
+        <button onclick="openChat('${u.id}','${u.nickname}')">Chat</button>
+      `;
+
+      users.appendChild(div);
+    });
+});
+
+/* USERS */
+async function loadUsers(){
+  const {data}=await supabase.from("users").select("*");
+
+  users.innerHTML="";
+
+  data.forEach(u=>{
+    if(u.id===me.id)return;
+
+    let div=document.createElement("div");
+    div.className="card";
+
+    div.innerHTML=`
+      <img src="${u.avatar_url||'https://i.pravatar.cc/100'}">
+      <div style="flex:1">${u.nickname}</div>
+      <button onclick="openChat('${u.id}','${u.nickname}')">Chat</button>
+    `;
+
+    users.appendChild(div);
+  });
+}
+
+loadUsers();
+
+/* OPEN CHAT */
+window.openChat=(id,name)=>{
+  selected=id;
+  chatTitle.innerText=name;
+  loadMessages();
+};
+
+/* SEND */
+window.send=async()=>{
+  const text=msg.value.trim();
+  if(!text||!selected)return;
+
+  msg.value="";
+
+  await supabase.from("messages").insert({
+    sender_id:me.id,
+    receiver_id:selected,
+    text,
+    created_at:new Date().toISOString()
+  });
+
+  loadMessages();
+};
+
+/* LOAD MESSAGES */
+async function loadMessages(){
+  const {data}=await supabase.from("messages").select("*")
+  .or(`and(sender_id.eq.${me.id},receiver_id.eq.${selected}),and(sender_id.eq.${selected},receiver_id.eq.${me.id})`)
+  .order("created_at",{ascending:true});
+
+  /* SOUND TRIGGER */
+  if(lastCount>0 && data.length>lastCount){
+    playSound();
+  }
+  lastCount=data.length;
+
+  chatbox.innerHTML="";
+  data.forEach(m=>{
+    let div=document.createElement("div");
+    div.className="msg "+(m.sender_id===me.id?"meMsg":"otherMsg");
+    div.innerText=m.text;
+
+    chatbox.appendChild(div);
+  });
+
+  chatbox.scrollTop=chatbox.scrollHeight;
+}
+
+/* AUTO UPDATE 10 SEC */
+setInterval(()=>{
+  if(selected){
+    loadMessages();
+  }
+},10000);
+
+/* 🎵 GLOBAL MUSIC (ADMIN → ALL USERS) */
+
+const globalPlayer = new Audio();
+let lastMusicId = null;
+
+async function checkGlobalMusic(){
+
+  const { data } = await supabase
+    .from("musics")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  if(!data || data.length === 0) return;
+
+  const music = data[0];
+
+  // тек жаңа музыка болса ғана ойнайды
+  if(lastMusicId !== music.id){
+
+    lastMusicId = music.id;
+
+    globalPlayer.src = "/" + music.music;
+    globalPlayer.play().catch(()=>{});
+
+    console.log("🎵 Ойналды:", music.music);
+  }
+}
+
+/* әр 2 секунд тексеру */
+setInterval(checkGlobalMusic, 2000);
+
+</script>
+
+</body>
+</html>

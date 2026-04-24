@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>VIP Admin Chat Monitor</title>
+
+<style>
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Inter,Arial;
+}
+
+body{
+  background:#070a12;
+  color:white;
+  overflow:hidden;
+}
+
+/* BACKGROUND (same style as user chat) */
+.bg{
+  position:fixed;
+  inset:0;
+  z-index:-2;
+  background:radial-gradient(circle at 20% 20%,#00f2ff55,transparent 40%),
+             radial-gradient(circle at 80% 30%,#ff00ff55,transparent 45%),
+             radial-gradient(circle at 50% 80%,#00ff9955,transparent 50%);
+  filter:blur(70px);
+  animation:move 10s ease-in-out infinite alternate;
+}
+
+@keyframes move{
+  0%{transform:scale(1);}
+  100%{transform:scale(1.2);}
+}
+
+/* TOP */
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px;
+  background:rgba(255,255,255,0.04);
+  backdrop-filter:blur(15px);
+  border-bottom:1px solid rgba(255,255,255,0.08);
+}
+
+.me{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.me img{
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  border:2px solid #00f2ff;
+}
+
+/* SEARCH */
+.search{
+  width:160px;
+  padding:8px;
+  border-radius:10px;
+  border:none;
+  background:rgba(255,255,255,0.05);
+  color:white;
+}
+
+/* MAIN */
+.container{
+  display:flex;
+  height:92vh;
+}
+
+/* USERS */
+.left{
+  width:30%;
+  overflow:auto;
+  border-right:1px solid rgba(255,255,255,0.06);
+}
+
+.card{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px;
+  margin:8px;
+  border-radius:12px;
+  background:rgba(255,255,255,0.03);
+  cursor:pointer;
+}
+
+.card:hover{
+  background:rgba(0,242,255,0.08);
+}
+
+/* RIGHT */
+.right{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
+
+/* CHAT VIEW */
+.chatbox{
+  flex:1;
+  padding:12px;
+  overflow:auto;
+}
+
+/* MSG */
+.msg{
+  padding:10px;
+  margin:6px;
+  border-radius:12px;
+  background:#1f2937;
+  word-break:break-word;
+}
+
+/* BUTTONS */
+button{
+  padding:6px 10px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  margin-left:5px;
+}
+
+
+
+.del{background:red;color:white;}
+.ban{background:orange;color:black;}
+.view{background:#00f2ff;color:black;}
+</style>
+</head>
+
+<body>
+
+<div class="bg"></div>
+
+<!-- TOP -->
+<div class="topbar">
+  <div class="me">
+    <img id="meImg">
+    <span id="meName"></span>
+  </div>
+
+  <input class="search" id="search" placeholder="Search users...">
+</div>
+
+<!-- MAIN -->
+<div class="container">
+
+  <div class="left" id="users"></div>
+
+  <div class="right">
+
+    <h3 id="title" style="padding:10px;">Select user</h3>
+
+    <div class="chatbox" id="chatbox"></div>
+
+    <div id="musicPanel">
+
+
+  </div>
+
+</div>
+<script type="module">
+import { supabase } from "./subapi.js";
+
+let admin=JSON.parse(localStorage.getItem("user"));
+if(!admin)location.href="index.html";
+
+let selectedUser=null;
+
+/* PROFILE */
+meImg.src=admin.avatar_url||"https://i.pravatar.cc/100";
+meName.innerText=admin.nickname;
+
+const panel = document.getElementById("musicPanel");
+
+const musicList = [
+  "hendey.mp3",
+  "minectraft.mp3",
+  "frefire.mp3",
+  "super.mp3",
+  "sadr.mp3",
+  "more.mp3"
+];
+
+/* BUTTONS DRAW */
+function renderButtons(){
+
+  panel.innerHTML = "<h3>🎵 Music Send Panel</h3>";
+
+  musicList.forEach((music)=>{
+
+    const btn = document.createElement("button");
+
+    btn.innerText = "▶ " + music;
+    btn.style.display = "block";
+    btn.style.margin = "6px";
+    btn.style.padding = "10px";
+    btn.style.background = "#00f2ff";
+    btn.style.border = "none";
+    btn.style.borderRadius = "8px";
+    btn.style.cursor = "pointer";
+
+    btn.onclick = async ()=>{
+
+      const { error } = await supabase
+        .from("musics")
+        .insert({
+          music: music
+        });
+
+      if(error){
+        alert("Қате: " + error.message);
+      } else {
+        alert("Жіберілді: " + music);
+      }
+    };
+
+    panel.appendChild(btn);
+  });
+}
+
+renderButtons();
+
+
+/* LOAD USERS */
+async function loadUsers(){
+  const {data}=await supabase.from("users").select("*");
+
+  users.innerHTML="";
+
+  data.forEach(u=>{
+    if(u.id===admin.id)return;
+
+    let div=document.createElement("div");
+    div.className="card";
+
+    div.innerHTML=`
+      <div style="flex:1">
+        <b>${u.nickname}</b><br>
+        <small>${u.email||""}</small>
+      </div>
+
+      <button class="view" onclick="openUser('${u.id}','${u.nickname}')">Open</button>
+      <button class="ban" onclick="banUser('${u.id}')">BAN</button>
+    `;
+
+    users.appendChild(div);
+  });
+}
+
+loadUsers();
+
+/* OPEN USER */
+window.openUser=async(id,name)=>{
+  selectedUser=id;
+  title.innerText=name+" chat history";
+  loadMessages(id);
+};
+
+/* LOAD MESSAGES OF SELECTED USER */
+async function loadMessages(id){
+
+  const {data}=await supabase.from("messages").select("*")
+  .or(`sender_id.eq.${id},receiver_id.eq.${id}`)
+  .order("created_at",{ascending:true});
+
+  chatbox.innerHTML="";
+
+  data.forEach(m=>{
+    let div=document.createElement("div");
+    div.className="msg";
+
+    div.innerHTML=`
+      <b>${m.sender_id}</b> → ${m.receiver_id}<br>
+      ${m.text}
+
+      <br><br>
+
+      <button class="del" onclick="deleteMsg('${m.id}')">Delete</button>
+    `;
+
+    chatbox.appendChild(div);
+  });
+}
+
+/* DELETE MESSAGE */
+window.deleteMsg=async(id)=>{
+  await supabase.from("messages").delete().eq("id",id);
+  if(selectedUser) loadMessages(selectedUser);
+};
+
+/* BAN USER (FULL DELETE) */
+window.banUser=async(id)=>{
+
+  // delete messages
+  await supabase.from("messages")
+    .delete()
+    .or(`sender_id.eq.${id},receiver_id.eq.${id}`);
+
+  // delete user (login + password + everything)
+  await supabase.from("users")
+    .delete()
+    .eq("id",id);
+
+  loadUsers();
+
+  chatbox.innerHTML="";
+  title.innerText="User banned ❌";
+};
+
+/* SEARCH */
+document.getElementById("search").addEventListener("input",async(e)=>{
+  const q=e.target.value.toLowerCase();
+
+  const {data}=await supabase.from("users").select("*");
+
+  users.innerHTML="";
+
+  data
+  .filter(u=>u.nickname.toLowerCase().includes(q))
+  .forEach(u=>{
+    let div=document.createElement("div");
+    div.className="card";
+
+    div.innerHTML=`
+      <div style="flex:1">${u.nickname}</div>
+      <button class="view" onclick="openUser('${u.id}','${u.nickname}')">Open</button>
+      <button class="ban" onclick="banUser('${u.id}')">BAN</button>
+    `;
+
+    users.appendChild(div);
+  });
+});
+
+
+</script>
+
+</body>
+</html>
